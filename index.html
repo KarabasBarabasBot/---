@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>КРЕСТИКИ-НОЛИКИ // ВЗЛОМ СИСТЕМЫ</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Matrix rain background -->
+<canvas id="matrix-canvas"></canvas>
+
+<!-- Background music -->
+<audio id="bg-music" src="assets/music.m4a" preload="auto"></audio>
+
+<div id="app">
+
+  <!-- Title -->
+  <div id="title">// КРЕСТИКИ-НОЛИКИ &lt;РЕЖИМ_ВЗЛОМА&gt;</div>
+
+  <!-- Status line -->
+  <div id="status">&gt; ИНИЦИАЛИЗАЦИЯ...</div>
+
+  <!-- Choose side screen -->
+  <div id="choose-screen">
+    <p>ВЫБЕРИТЕ СВОЁ ОРУЖИЕ:</p>
+    <div class="choose-buttons">
+      <button class="btn-choose" data-mark="X">✕</button>
+      <button class="btn-choose" data-mark="O">○</button>
+    </div>
+    <p style="font-size:0.7rem;color:#006617;margin-top:8px;">ВНИМАНИЕ: ИИ НЕПОБЕДИМ</p>
+  </div>
+
+  <!-- Game screen -->
+  <div id="game-screen">
+
+    <!-- Board -->
+    <div id="board">
+      <div class="cell" data-index="0"></div>
+      <div class="cell" data-index="1"></div>
+      <div class="cell" data-index="2"></div>
+      <div class="cell" data-index="3"></div>
+      <div class="cell" data-index="4"></div>
+      <div class="cell" data-index="5"></div>
+      <div class="cell" data-index="6"></div>
+      <div class="cell" data-index="7"></div>
+      <div class="cell" data-index="8"></div>
+    </div>
+
+    <!-- Scoreboard -->
+    <div id="scoreboard">
+      ВЫ: <span id="score-player">0</span>
+      &nbsp;|&nbsp;
+      ИИ: <span id="score-ai">0</span>
+      &nbsp;|&nbsp;
+      НИЧЬЯ: <span id="score-draw">0</span>
+    </div>
+
+    <!-- Restart -->
+    <button id="btn-restart">[ ЗАНОВО ]</button>
+
+  </div>
+
+</div><!-- #app -->
+
+<!-- Music toggle button -->
+<button id="btn-music" title="Музыка">🔊</button>
+
+<!-- Lose overlay -->
+<div id="lose-overlay">
+  <img id="lose-img" src="assets/IMG_0459.jpeg" alt="ВЫ ПРОИГРАЛИ" />
+  <div id="lose-text">СИСТЕМА ВЗЛОМАНА. ВЫ ПРОИГРАЛИ.</div>
+  <div id="lose-sub">&gt; СОПРОТИВЛЕНИЕ БЕСПОЛЕЗНО &lt;</div>
+  <button id="btn-try-again">[ ПОПРОБОВАТЬ СНОВА ]</button>
+</div>
+
+<!-- Win overlay -->
+<div id="win-overlay">
+  <img id="win-img" src="assets/camphoto_1144747756.jpg" alt="ВЫ ПОБЕДИЛИ" />
+  <div id="win-text">ВЗЛОМ ПРОВАЛИЛСЯ. ВЫ ПОБЕДИЛИ!</div>
+  <div id="win-sub">&gt; СИСТЕМА НЕ УСТОЯЛА &lt;</div>
+  <button id="btn-win-again">[ СЫГРАТЬ ЕЩЁ ]</button>
+</div>
+
+<!-- Draw overlay -->
+<div id="draw-overlay">
+  <div id="draw-text">ЗАФИКСИРОВАНА НИЧЬЯ.</div>
+  <div id="draw-sub">&gt; ПОЧТИ ПОЛУЧИЛОСЬ. НО НЕ СОВСЕМ. &lt;</div>
+  <button id="btn-draw-again">[ РЕВАНШ ]</button>
+</div>
+
+<script src="matrix.js"></script>
+<script src="game.js"></script>
+<script>
+  MatrixRain.start();
+
+  // ── ФОНОВАЯ МУЗЫКА ──────────────────────────────────────────
+  const START_SEC = 110; // 1:50
+  const bgAudio = document.getElementById('bg-music');
+  const btnMusic = document.getElementById('btn-music');
+  let musicStarted = false;
+
+  bgAudio.volume = 0.55;
+
+  // Loop: при окончании возвращаемся к 1:50
+  bgAudio.addEventListener('ended', () => {
+    bgAudio.currentTime = START_SEC;
+    bgAudio.play().catch(() => {});
+  });
+
+  window.startMusic = function () {
+    if (musicStarted) return;
+    musicStarted = true;
+
+    // Создаём AudioContext при первом пользовательском жесте
+    window.sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const doPlay = () => {
+      bgAudio.currentTime = START_SEC;
+      bgAudio.play().catch(() => {});
+    };
+
+    // Ждём загрузки метаданных (нужно для корректного seek)
+    if (bgAudio.readyState >= 1) {
+      doPlay();
+    } else {
+      bgAudio.addEventListener('loadedmetadata', doPlay, { once: true });
+    }
+  };
+
+  // ── РАДОСТНЫЙ ЗВУК (победа) ──────────────────────────────────
+  window.playWinSound = function () {
+    try {
+      const ctx = window.sharedAudioCtx ||
+        new (window.AudioContext || window.webkitAudioContext)();
+      window.sharedAudioCtx = ctx;
+
+      const play = () => {
+        // Восходящие ноты — мажорный аккорд
+        const notes = [330, 415, 523, 659, 784];
+        let time = ctx.currentTime + 0.05;
+        notes.forEach((freq, i) => {
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, time);
+          osc.frequency.setValueAtTime(freq * 1.02, time + 0.15);
+          gain.gain.setValueAtTime(0, time);
+          gain.gain.linearRampToValueAtTime(0.38, time + 0.04);
+          gain.gain.linearRampToValueAtTime(0.28, time + 0.22);
+          gain.gain.linearRampToValueAtTime(0, time + 0.38);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(time); osc.stop(time + 0.38);
+          time += 0.18;
+        });
+      };
+      ctx.state === 'suspended' ? ctx.resume().then(play) : play();
+    } catch (e) {}
+  };
+
+  // Mute/unmute
+  btnMusic.addEventListener('click', () => {
+    bgAudio.muted = !bgAudio.muted;
+    btnMusic.textContent = bgAudio.muted ? '🔇' : '🔊';
+  });
+</script>
+</body>
+</html>
